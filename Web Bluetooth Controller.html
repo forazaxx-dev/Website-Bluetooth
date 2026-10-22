@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Domaah Micro:Bit Control App</title>
+
+  <link rel="icon" type="image/png" href="domaah-logo.png" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    :root {
+      --background: #050816;
+      --cyan: #22d3ee;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+    }
+
+    * {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      color: #e5f6ff;
+      background:
+        radial-gradient(
+          circle at 50% -20%,
+          rgba(14, 165, 233, 0.17),
+          transparent 35%
+        ),
+        var(--background);
+      font-family: "Inter", sans-serif;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    .brand {
+      font-family: "Space Grotesk", sans-serif;
+    }
+
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(
+          rgba(56, 189, 248, 0.055) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          90deg,
+          rgba(56, 189, 248, 0.055) 1px,
+          transparent 1px
+        );
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 90%);
+      -webkit-mask-image: linear-gradient(to bottom, black, transparent 90%);
+    }
+
+    .gradient-text {
+      color: transparent;
+      background: linear-gradient(
+        110deg,
+        #67e8f9,
+        #38bdf8,
+        #818cf8,
+        #22d3ee,
+        #67e8f9
+      );
+      background-size: 250% auto;
+      background-clip: text;
+      -webkit-background-clip: text;
+      animation: shimmer 7s linear infinite;
+    }
+
+    @keyframes shimmer {
+      to {
+        background-position: 250% center;
+      }
+    }
+
+    .glass {
+      background: rgba(10, 20, 42, 0.63);
+      border: 1px solid rgba(103, 232, 249, 0.13);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .card-glow {
+      transition: 0.35s ease;
+    }
+
+    .card-glow:hover {
+      transform: translateY(-7px);
+      border-color: rgba(34, 211, 238, 0.55);
+      box-shadow:
+        0 0 0 1px rgba(34, 211, 238, 0.12),
+        0 0 35px rgba(34, 211, 238, 0.13);
+    }
+
+    .neon-button {
+      box-shadow: 0 0 22px rgba(34, 211, 238, 0.22);
+      transition: 0.3s ease;
+    }
+
+    .neon-button:hover {
+      box-shadow: 0 0 32px rgba(34, 211, 238, 0.55);
+      transform: translateY(-2px);
+    }
+
+    .pulse-dot {
+      animation: pulseDot 1.8s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.65);
+      }
+
+      50% {
+        box-shadow: 0 0 0 7px rgba(74, 222, 128, 0);
+      }
+    }
+
+    .orbital-ring {
+      position: absolute;
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      border-radius: 50%;
+      transform: rotateX(68deg) rotateY(-13deg);
+      animation: orbit 12s linear infinite;
+    }
+
+    .orbital-ring:nth-child(2) {
+      transform: rotateX(68deg) rotateY(50deg);
+      animation-duration: 16s;
+      animation-direction: reverse;
+    }
+
+    .orbital-ring:nth-child(3) {
+      transform: rotateX(70deg) rotateY(110deg);
+      animation-duration: 20s;
+    }
+
+    @keyframes orbit {
+      to {
+        transform: rotateX(68deg) rotateY(347deg) rotateZ(360deg);
+      }
+    }
+
+    .fade-in {
+      opacity: 0;
+      transform: translateY(28px);
+      transition:
+        opacity 0.8s ease,
+        transform 0.8s ease;
+    }
+
+    .fade-in.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #globe {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    #globe:active {
+      cursor: grabbing;
+    }
+
+    @media (max-width: 640px) {
+      #globe {
+        min-height: 350px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="grid-bg"></div>
+
+  <!-- Navbar -->
+  <header class="relative z-20 border-b border-cyan-300/10">
+  <nav class="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-8">
+    <a href="#" class="flex items-center gap-3">
+      <img
+        src="domaah-logo.png"
+        alt="Domaah Logo"
+        class="h-10 w-10 rounded-xl object-contain"
+        onerror="this.style.display='none'"
+      />
+
+      <span class="brand text-xl font-bold tracking-[0.18em] text-white">
+        DOMAAH
+      </span>
+    </a>
+
+    <div class="hidden items-center gap-8 md:flex">
+      <a
+        href="#features"
+        class="text-sm text-slate-400 transition hover:text-cyan-300"
+      >
+        Features
+      </a>
+
+      <a
+        href="#stats"
+        class="text-sm text-slate-400 transition hover:text-cyan-300"
+      >
+        Telemetry
+      </a>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div
+        class="flex items-center gap-2 rounded-full border border-green-400/20 bg-green-400/5 px-3 py-2 text-xs text-green-300"
+      >
+        <span class="pulse-dot h-2 w-2 rounded-full bg-green-400"></span>
+        Web Bluetooth Ready
+      </div>
+    </div>
+  </nav>
+</header>
+
+
+  <main class="relative z-10">
+    <!-- Hero Section -->
+    <section
+      class="mx-auto grid min-h-[720px] max-w-7xl items-center gap-10 px-5 py-20 lg:grid-cols-2 lg:px-8"
+    >
+      <div class="fade-in">
+        <div
+          class="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300"
+        >
+          <i data-lucide="zap" class="h-4 w-4"></i>
+          Next-Gen Lo-Fi Robotics Interface
+        </div>
+
+        <h1
+          class="max-w-3xl text-5xl font-bold leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl"
+        >
+          Domaah
+          <span class="gradient-text">Micro:Bit</span>
+          Control App
+        </h1>
+
+        <p class="mt-7 max-w-xl text-base leading-8 text-slate-400 sm:text-lg">
+          Platform kontroler robot lo-fi berbasis Micro:Bit melalui Web Bluetooth.
+          Nikmati kontrol real-time, latensi rendah, telemetri langsung, dan
+          antarmuka modern tanpa instalasi aplikasi tambahan.
+        </p>
+
+        <div class="mt-9 flex flex-wrap gap-4">
+          <!-- Start Project sekarang scroll ke bagian versi aplikasi -->
+          <a
+            href="#project-version"
+            class="neon-button inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3.5 font-bold text-slate-950"
+          >
+            Start Project
+            <i data-lucide="arrow-down" class="h-5 w-5"></i>
+          </a>
+
+          <a
+            href="#features"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/60 px-6 py-3.5 font-semibold text-slate-200 transition hover:border-cyan-400/50 hover:text-cyan-300"
+          >
+            Pelajari Fitur
+            <i data-lucide="chevron-down" class="h-5 w-5"></i>
+          </a>
+        </div>
+
+        <!-- Telemetry Cepat -->
+        <div class="mt-12 grid max-w-xl grid-cols-3 gap-5 border-t border-slate-800 pt-6">
+          <div>
+            <p class="text-xs uppercase tracking-widest text-slate-500">
+              Latency
+            </p>
+            <p class="mt-2 text-xl font-bold text-cyan-300">
+              &lt; 12ms
+            </p>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-widest text-slate-500">
+              Protocol
+            </p>
+            <p class="mt-2 text-xl font-bold text-cyan-300">
+              BLE UART
+            </p>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-widest text-slate-500">
+              Interface
+            </p>
+            <p class="mt-2 text-xl font-bold text-cyan-300">
+              Dual PWM
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Globe 3D -->
+      <div class="fade-in relative mx-auto h-[430px] w-full max-w-[560px]">
+        <div class="absolute inset-8 rounded-full bg-cyan-400/10 blur-3xl"></div>
+
+        <div class="orbital-ring inset-[11%]"></div>
+        <div class="orbital-ring inset-[5%]"></div>
+        <div class="orbital-ring inset-[18%]"></div>
+
+        <div class="relative h-full w-full">
+          <canvas id="globe"></canvas>
+        </div>
+
+        <div
+          class="glass absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-xl px-4 py-3 text-xs text-slate-300"
+        >
+          <i data-lucide="move-3d" class="h-4 w-4 text-cyan-300"></i>
+          Drag to rotate globe
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Stats -->
+    <section id="stats" class="mx-auto max-w-7xl px-5 pb-24 lg:px-8">
+      <div
+        class="fade-in grid grid-cols-2 overflow-hidden rounded-2xl border border-cyan-300/10 bg-slate-900/50 md:grid-cols-4"
+      >
+        <div class="border-b border-r border-slate-800 p-6 md:border-b-0">
+          <p class="text-3xl font-bold text-white">0.012s</p>
+          <p class="mt-2 text-sm text-slate-500">Avg Response</p>
+        </div>
+
+        <div class="border-b border-slate-800 p-6 md:border-b-0 md:border-r">
+          <p class="text-3xl font-bold text-white">1600+</p>
+          <p class="mt-2 text-sm text-slate-500">Particle Points</p>
+        </div>
+
+        <div class="border-r border-slate-800 p-6">
+          <p class="text-3xl font-bold text-white">Dual</p>
+          <p class="mt-2 text-sm text-slate-500">PWM Channels</p>
+        </div>
+
+        <div class="p-6">
+          <p class="text-3xl font-bold text-green-300">Live</p>
+          <p class="mt-2 text-sm text-slate-500">Telemetry Feed</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Project Version Section -->
+    <section
+      id="project-version"
+      class="mx-auto max-w-7xl scroll-mt-24 px-5 pb-28 lg:px-8"
+    >
+      <div class="fade-in mx-auto max-w-3xl text-center">
+        <p
+          class="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300"
+        >
+          Select Your Interface
+        </p>
+
+        <h2 class="text-4xl font-bold text-white sm:text-5xl">
+          Choose your controller version
+        </h2>
+
+        <p class="mt-5 leading-7 text-slate-400">
+          Pilih versi controller yang ingin digunakan untuk mengendalikan robot
+          Micro:Bit secara real-time.
+        </p>
+      </div>
+
+      <div class="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-2">
+        <!-- Card menuju bluetooth-controller.html -->
+        <a
+          href="bluetooth-controller.html"
+          class="card-glow glass group fade-in block rounded-2xl p-8"
+        >
+          <div class="flex items-start justify-between gap-5">
+            <div class="flex items-center gap-4">
+              <div
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300"
+              >
+                <i data-lucide="gamepad-2" class="h-7 w-7"></i>
+              </div>
+
+              <div>
+                <p
+                  class="mb-1 text-xs uppercase tracking-[0.18em] text-cyan-300"
+                >
+                  Available Version
+                </p>
+
+                <h3 class="text-xl font-bold text-white sm:text-2xl">
+                  Microbit Controller App Version 1.0
+                </h3>
+              </div>
+            </div>
+
+            <i
+              data-lucide="arrow-up-right"
+              class="h-6 w-6 shrink-0 text-slate-500 transition group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-cyan-300"
+            ></i>
+          </div>
+
+          <div
+            class="mt-7 grid grid-cols-3 gap-3 border-t border-slate-800 pt-5 text-center"
+          >
+            <div>
+              <p class="text-sm font-bold text-cyan-300">BLE UART</p>
+              <p class="mt-1 text-xs text-slate-500">Protocol</p>
+            </div>
+
+            <div>
+              <p class="text-sm font-bold text-cyan-300">Dual PWM</p>
+              <p class="mt-1 text-xs text-slate-500">Motor Control</p>
+            </div>
+
+            <div>
+              <p class="text-sm font-bold text-cyan-300">Live</p>
+              <p class="mt-1 text-xs text-slate-500">Telemetry</p>
+            </div>
+          </div>
+
+          <div class="mt-6 flex items-center justify-between text-sm">
+            <span class="text-slate-400">
+              Buka controller versi 1.0
+            </span>
+
+            <span
+              class="font-semibold text-cyan-300 transition group-hover:text-cyan-200"
+            >
+              Open App →
+            </span>
+          </div>
+        </a>
+
+        <!-- Card menuju teachable-controller.html -->
+        <a
+          href="teachable-controller.html"
+          class="card-glow glass group fade-in block rounded-2xl p-8"
+        >
+          <div class="flex items-start justify-between gap-5">
+            <div class="flex items-center gap-4">
+              <div
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-violet-400/10 text-violet-300"
+              >
+                <i data-lucide="brain" class="h-7 w-7"></i>
+              </div>
+
+              <div>
+                <p
+                  class="mb-1 text-xs uppercase tracking-[0.18em] text-violet-300"
+                >
+                  AI Vision Version
+                </p>
+
+                <h3 class="text-xl font-bold text-white sm:text-2xl">
+                  Teachable Controller
+                </h3>
+              </div>
+            </div>
+
+            <i
+              data-lucide="arrow-up-right"
+              class="h-6 w-6 shrink-0 text-slate-500 transition group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-violet-300"
+            ></i>
+          </div>
+
+          <div
+            class="mt-7 grid grid-cols-3 gap-3 border-t border-slate-800 pt-5 text-center"
+          >
+            <div>
+              <p class="text-sm font-bold text-violet-300">AI Vision</p>
+              <p class="mt-1 text-xs text-slate-500">Detection</p>
+            </div>
+
+            <div>
+              <p class="text-sm font-bold text-violet-300">Auto</p>
+              <p class="mt-1 text-xs text-slate-500">Direction Send</p>
+            </div>
+
+            <div>
+              <p class="text-sm font-bold text-violet-300">Live</p>
+              <p class="mt-1 text-xs text-slate-500">Camera Feed</p>
+            </div>
+          </div>
+
+          <div class="mt-6 flex items-center justify-between text-sm">
+            <span class="text-slate-400">
+              Kendalikan robot dengan AI
+            </span>
+
+            <span
+              class="font-semibold text-violet-300 transition group-hover:text-violet-200"
+            >
+              Open App →
+            </span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="mx-auto max-w-7xl scroll-mt-24 px-5 pb-28 lg:px-8">
+      <div class="fade-in mb-12 max-w-2xl">
+        <p
+          class="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300"
+        >
+          Built for Control
+        </p>
+
+        <h2 class="text-4xl font-bold text-white sm:text-5xl">
+          Semua yang dibutuhkan untuk robot lo-fi modern.
+        </h2>
+
+        <p class="mt-5 leading-7 text-slate-400">
+          Antarmuka ringan dengan kontrol presisi, koneksi cepat, dan pemantauan
+          kondisi robot secara real-time.
+        </p>
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <!-- Feature 1 -->
+        <article class="card-glow glass fade-in rounded-2xl p-7 lg:col-span-2">
+          <div
+            class="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300"
+          >
+            <i data-lucide="bluetooth" class="h-6 w-6"></i>
+          </div>
+
+          <h3 class="text-2xl font-bold text-white">
+            Web Bluetooth Driverless
+          </h3>
+
+          <p class="mt-3 max-w-xl leading-7 text-slate-400">
+            Koneksi instan langsung dari browser menggunakan
+            <code class="text-cyan-300">navigator.bluetooth</code> dan GATT,
+            tanpa instalasi driver atau aplikasi tambahan.
+          </p>
+        </article>
+
+        <!-- Feature 2 -->
+        <article class="card-glow glass fade-in rounded-2xl p-7">
+          <div
+            class="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-400/10 text-violet-300"
+          >
+            <i data-lucide="gamepad-2" class="h-6 w-6"></i>
+          </div>
+
+          <h3 class="text-xl font-bold text-white">
+            Virtual Joystick & PWM
+          </h3>
+
+          <p class="mt-3 leading-7 text-slate-400">
+            Kontrol kemudi analog dan slider kecepatan motor dengan skala PWM
+            0–255 untuk robot roda dua maupun empat.
+          </p>
+        </article>
+
+        <!-- Feature 3 -->
+        <article class="card-glow glass fade-in rounded-2xl p-7">
+          <div
+            class="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-400/10 text-blue-300"
+          >
+            <i data-lucide="activity" class="h-6 w-6"></i>
+          </div>
+
+          <h3 class="text-xl font-bold text-white">
+            Real-time Telemetri
+          </h3>
+
+          <p class="mt-3 leading-7 text-slate-400">
+            Monitoring grafik dan sensor accelerometer, kompas magnetik, serta
+            baterai Micro:Bit secara live.
+          </p>
+        </article>
+
+        <!-- Feature 4 -->
+        <article class="card-glow glass fade-in rounded-2xl p-7">
+          <div
+            class="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-orange-400/10 text-orange-300"
+          >
+            <i data-lucide="gauge" class="h-6 w-6"></i>
+          </div>
+
+          <h3 class="text-xl font-bold text-white">
+            Ultra Low Latency Mode
+          </h3>
+
+          <p class="mt-3 leading-7 text-slate-400">
+            Optimasi paket BLE UART dengan buffer minimal untuk respons kontrol
+            yang cepat.
+          </p>
+        </article>
+
+        <!-- Feature 5 -->
+        <article class="card-glow glass fade-in rounded-2xl p-7">
+          <div
+            class="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-green-400/10 text-green-300"
+          >
+            <i data-lucide="smartphone" class="h-6 w-6"></i>
+          </div>
+
+          <h3 class="text-xl font-bold text-white">
+            Responsive Mobile UI
+          </h3>
+
+          <p class="mt-3 leading-7 text-slate-400">
+            Tampilan ramah HP dan tablet serta mendukung gestur sentuh untuk
+            kontrol yang lebih fleksibel.
+          </p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="relative z-10 border-t border-cyan-300/10">
+    <div
+      class="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between lg:px-8"
+    >
+      <p>
+        © 2026 Domaah Micro:Bit Controll App. Built for modern lo-fi robotics.
+      </p>
+
+      <div class="flex items-center gap-2 text-green-300">
+        <span class="pulse-dot h-2 w-2 rounded-full bg-green-400"></span>
+        All systems operational
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /*
+      Lucide Icons
+    */
+    lucide.createIcons();
+
+    /*
+      Three.js Particle Globe
+    */
+    const canvas = document.getElementById("globe");
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      canvas.clientWidth / canvas.clientHeight,
+      0.1,
+      100
+    );
+
+    camera.position.z = 3.15;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      alpha: true,
+      antialias: true
+    });
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(
+      canvas.clientWidth,
+      canvas.clientHeight,
+      false
+    );
+
+    const globeGroup = new THREE.Group();
+    scene.add(globeGroup);
+
+    /*
+      Particle globe menggunakan distribusi Fibonacci Sphere
+    */
+    const particleCount = 1800;
+    const positions = [];
+    const colors = [];
+
+    const cyanColor = new THREE.Color("#22d3ee");
+    const blueColor = new THREE.Color("#6366f1");
+
+    for (let i = 0; i < particleCount; i++) {
+      const y = 1 - (i / (particleCount - 1)) * 2;
+      const radius = Math.sqrt(1 - y * y);
+      const theta = Math.PI * (3 - Math.sqrt(5));
+
+      const x = Math.cos(theta * i) * radius;
+      const z = Math.sin(theta * i) * radius;
+
+      const globeSize = 1.08;
+
+      positions.push(
+        x * globeSize,
+        y * globeSize,
+        z * globeSize
+      );
+
+      const color = cyanColor
+        .clone()
+        .lerp(blueColor, i / particleCount);
+
+      colors.push(color.r, color.g, color.b);
+    }
+
+    const globeGeometry = new THREE.BufferGeometry();
+
+    globeGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
+
+    globeGeometry.setAttribute(
+      "color",
+      new THREE.Float32BufferAttribute(colors, 3)
+    );
+
+    const globeMaterial = new THREE.PointsMaterial({
+      size: 0.025,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    const globe = new THREE.Points(
+      globeGeometry,
+      globeMaterial
+    );
+
+    globeGroup.add(globe);
+
+    /*
+      Aura atmosfer
+    */
+    const glowGeometry = new THREE.SphereGeometry(
+      1.18,
+      32,
+      32
+    );
+
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      transparent: true,
+      opacity: 0.035,
+      side: THREE.BackSide
+    });
+
+    const atmosphereGlow = new THREE.Mesh(
+      glowGeometry,
+      glowMaterial
+    );
+
+    globeGroup.add(atmosphereGlow);
+
+    /*
+      Partikel melayang di sekitar globe
+    */
+    const floatingPositions = [];
+
+    for (let i = 0; i < 100; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 1.35 + Math.random() * 0.65;
+      const y = (Math.random() - 0.5) * 2.3;
+
+      floatingPositions.push(
+        Math.cos(angle) * radius,
+        y,
+        Math.sin(angle) * radius
+      );
+    }
+
+    const floatingGeometry = new THREE.BufferGeometry();
+
+    floatingGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(floatingPositions, 3)
+    );
+
+    const floatingMaterial = new THREE.PointsMaterial({
+      color: 0x67e8f9,
+      size: 0.018,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending
+    });
+
+    const floatingParticles = new THREE.Points(
+      floatingGeometry,
+      floatingMaterial
+    );
+
+    globeGroup.add(floatingParticles);
+
+    /*
+      Interaksi drag mouse dan touchscreen
+    */
+    let isDragging = false;
+    let previousX = 0;
+    let previousY = 0;
+
+    let targetRotationX = 0.15;
+    let targetRotationY = 0.3;
+
+    function pointerDown(event) {
+      isDragging = true;
+      previousX = event.clientX;
+      previousY = event.clientY;
+    }
+
+    function pointerMove(event) {
+      if (!isDragging) return;
+
+      const deltaX = event.clientX - previousX;
+      const deltaY = event.clientY - previousY;
+
+      targetRotationY += deltaX * 0.008;
+      targetRotationX += deltaY * 0.006;
+
+      previousX = event.clientX;
+      previousY = event.clientY;
+    }
+
+    function pointerUp() {
+      isDragging = false;
+    }
+
+    canvas.addEventListener("pointerdown", pointerDown);
+    canvas.addEventListener("pointermove", pointerMove);
+    canvas.addEventListener("pointerup", pointerUp);
+    canvas.addEventListener("pointerleave", pointerUp);
+
+    /*
+      Animasi globe
+    */
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (!isDragging) {
+        targetRotationY += 0.0025;
+      }
+
+      globeGroup.rotation.x +=
+        (targetRotationX - globeGroup.rotation.x) * 0.08;
+
+      globeGroup.rotation.y +=
+        (targetRotationY - globeGroup.rotation.y) * 0.08;
+
+      floatingParticles.rotation.y -= 0.0015;
+      floatingParticles.rotation.x += 0.0005;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    /*
+      Responsive canvas
+    */
+    function resizeGlobe() {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(width, height, false);
+    }
+
+    window.addEventListener("resize", resizeGlobe);
+
+    /*
+      Scroll fade-in animation
+    */
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("show");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.15
+      }
+    );
+
+    document.querySelectorAll(".fade-in").forEach((element) => {
+      observer.observe(element);
+    });
+  </script>
+</body>
+</html>
